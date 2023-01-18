@@ -61,7 +61,78 @@ pub fn assemble<W: Write>(file: HackPair, mut out: W) -> anyhow::Result<()> {
 
                 writeln!(out, "{value:0width$b}", width = INSTRUCTION_WIDTH)?;
             }
-            Rule::c_instruction => writeln!(out, "[TODO] C instruction")?,
+            Rule::c_instruction => {
+                let mut dest = "";
+                let mut comp = "";
+                let mut jump = "";
+
+                for spec in line.into_inner() {
+                    match spec.as_rule() {
+                        Rule::dest => dest = spec.as_str(),
+                        Rule::comp => comp = spec.as_str(),
+                        Rule::jump => jump = spec.as_str(),
+                        _ => unreachable!(),
+                    }
+                }
+
+                #[rustfmt::skip]
+                let dest_code = match (dest.contains('A'), dest.contains('D'), dest.contains('M')) {
+                    (false, false, false) => "000",
+                    (false, false,  true) => "001",
+                    (false,  true, false) => "010",
+                    (false,  true,  true) => "011",
+                    ( true, false, false) => "100",
+                    ( true, false,  true) => "101",
+                    ( true,  true, false) => "110",
+                    ( true,  true,  true) => "111",
+                };
+                #[rustfmt::skip]
+                let a_comp_code = match comp {
+                      "0" => "0101010",
+                      "1" => "0111111",
+                     "-1" => "0111010",
+                      "D" => "0001100",
+                      "A" => "0110000",
+                      "M" => "1110000",
+                     "!D" => "0001101",
+                     "!A" => "0110001",
+                     "!M" => "1110001",
+                     "-D" => "0001111",
+                     "-A" => "0110011",
+                     "-M" => "1110011",
+                    "D+1" => "0011111",
+                    "A+1" => "0110111",
+                    "M+1" => "1110111",
+                    "D-1" => "0001110",
+                    "A-1" => "0110010",
+                    "M-1" => "1110010",
+                    "D+A" => "0000010",
+                    "D+M" => "1000010",
+                    "D-A" => "0010011",
+                    "D-M" => "1010011",
+                    "A-D" => "0000111",
+                    "M-D" => "1000111",
+                    "D&A" => "0000000",
+                    "D&M" => "1000000",
+                    "D|A" => "0010101",
+                    "D|M" => "1010101",
+                        _ => bail!("invalid computation '{}'", comp)
+                };
+                #[rustfmt::skip]
+                let jump_code = match jump {
+                       "" => "000",
+                    "JGT" => "001",
+                    "JEQ" => "010",
+                    "JGE" => "011",
+                    "JLT" => "100",
+                    "JNE" => "101",
+                    "JLE" => "110",
+                    "JMP" => "111",
+                        _ => bail!("invalid jump '{}'", jump)
+                };
+
+                writeln!(out, "111{}{}{}", a_comp_code, dest_code, jump_code)?;
+            }
             Rule::label_definition => {}
             Rule::EOI => return Ok(()),
             _ => unreachable!(),
