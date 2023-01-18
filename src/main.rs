@@ -1,9 +1,17 @@
+#[macro_use]
+extern crate pest_derive;
+
+use {clap::Parser as _, pest::Parser as _, parser::HackParser, cli::Cli, std::fs};
+
 mod cli;
+mod parser;
 
-use {clap::Parser, cli::Cli};
-
-fn main() {
+fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
+    let file = fs::read_to_string(cli.file)?;
 
-    println!("{:?}", cli);
+    let ast = HackParser::parse(parser::Rule::file, &file);
+    println!("{:#?}", ast);
+
+    Ok(())
 }

@@ -1,0 +1,5 @@
+file = { SOI ~ (line ~ NEWLINE+)* ~ EOI }
+
+line = { (!NEWLINE ~ ANY)* }
+
+WHITESPACE = _{ " " | "\t" }
