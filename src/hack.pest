@@ -1,10 +1,23 @@
-file = { SOI ~ line* ~ EOI }
+file = { SOI ~ NEWLINE* ~ line ~ (NEWLINE+ ~ line)* ~ NEWLINE* ~ EOI }
 
-line = { a_instruction | line_other }
+line = _{ a_instruction | c_instruction | line_other }
 line_other = @{ (!NEWLINE ~ ANY)+ }
 
 a_instruction = { "@" ~ constant }
 constant = @{ ASCII_DIGIT+ }
 
-WHITESPACE = _{ " " | "\t" | NEWLINE }
+c_instruction = ${ (dest ~ "=")? ~ comp ~ (";" ~ jump)? }
+dest = @{ ("A" | "D" | "M")+ }
+comp = @{
+    "0" | "1" | "-1"
+    | "D" ~ ("+" | "-" | "&" | "|") ~ a_or_m
+    | a_or_m ~ "-" ~ "D"
+    | register ~ ("+" | "-") ~ "1"
+    | ("!" | "-")? ~ register
+}
+register = @{ "A" | "D" | "M" }
+a_or_m = @{ "A" | "M" }
+jump = { "JGT" | "JEQ" | "JGE" | "JLT" | "JNE" | "JLE" | "JMP" }
+
+WHITESPACE = _{ " " | "\t" }
 COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* }
