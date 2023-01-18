@@ -65,9 +65,10 @@ pub fn scan_symbols(file: HackPair) -> anyhow::Result<SymbolTable> {
         }))
         .collect();
 
+    // scan labels
     let mut line_number = 0;
 
-    for line in file.into_inner() {
+    for line in file.clone().into_inner() {
         match line.as_rule() {
             Rule::a_instruction | Rule::c_instruction => line_number += 1,
             Rule::label_definition => {
@@ -92,6 +93,39 @@ pub fn scan_symbols(file: HackPair) -> anyhow::Result<SymbolTable> {
                     }
                 }
             }
+            Rule::EOI => break,
+            _ => unreachable!(),
+        }
+    }
+
+    // scan variables
+    let mut stack_top = RESERVED_REGISTERS;
+
+    for line in file.into_inner() {
+        match line.as_rule() {
+            Rule::a_instruction => {
+                let inner = line.into_inner().exactly_one().unwrap();
+
+                match inner.as_rule() {
+                    Rule::constant => {}
+                    Rule::symbol => {
+                        let symbol = inner.as_str();
+
+                        if !symbol_table.contains_key(symbol) {
+                            symbol_table.insert(
+                                symbol.to_owned(),
+                                SymbolData {
+                                    value: stack_top,
+                                    is_predefined: false,
+                                },
+                            );
+                            stack_top += 1;
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            Rule::c_instruction | Rule::label_definition => {}
             Rule::EOI => return Ok(symbol_table),
             _ => unreachable!(),
         }
