@@ -1,9 +1,10 @@
-file = { SOI ~ (line ~ NEWLINE+)* ~ EOI }
+file = { SOI ~ line* ~ EOI }
 
 line = { a_instruction | line_other }
-line_other = { (!NEWLINE ~ ANY)* }
+line_other = @{ (!NEWLINE ~ ANY)+ }
 
 a_instruction = { "@" ~ constant }
 constant = @{ ASCII_DIGIT+ }
 
-WHITESPACE = _{ " " | "\t" }
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* }
