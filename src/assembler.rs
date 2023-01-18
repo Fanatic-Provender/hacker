@@ -2,7 +2,7 @@ use std::collections::hash_map::Entry;
 
 use {
     crate::parser::{HackPair, Rule},
-    anyhow::bail,
+    anyhow::{anyhow, bail},
     itertools::Itertools,
     std::{collections::HashMap, io::Write},
 };
@@ -16,6 +16,8 @@ pub struct SymbolData {
 type SymbolTable = HashMap<String, SymbolData>;
 
 const RESERVED_REGISTERS: usize = 16;
+const INSTRUCTION_WIDTH: usize = 16;
+const ADDRESS_SPACE_SIZE: usize = 32768;
 static KEYWORDS: &[(&str, usize)] = &[
     ("SP", 0),
     ("LCL", 1),
@@ -28,13 +30,39 @@ static KEYWORDS: &[(&str, usize)] = &[
 
 pub fn assemble<W: Write>(file: HackPair, mut out: W) -> anyhow::Result<()> {
     let symbol_table = scan_symbols(file.clone())?;
-    writeln!(out, "{:#?}", symbol_table)?;
+
+    dbg!();
 
     for line in file.into_inner() {
         match line.as_rule() {
-            Rule::a_instruction => writeln!(out, "A")?,
-            Rule::c_instruction => writeln!(out, "C")?,
-            Rule::label_definition => writeln!(out, "L")?,
+            Rule::a_instruction => {
+                let spec = line.into_inner().exactly_one().unwrap();
+
+                let value = match spec.as_rule() {
+                    Rule::constant => {
+                        let spec = spec.as_str();
+                        let value = spec
+                            .parse()
+                            .map_err(|_| anyhow!("invalid constant '{}'", spec))?;
+                        if (0..ADDRESS_SPACE_SIZE).contains(&value) {
+                            value
+                        } else {
+                            bail!("invalid constant '{}'", spec)
+                        }
+                    }
+                    Rule::symbol => {
+                        symbol_table
+                            .get(spec.as_str())
+                            .expect("incomplete symbol table")
+                            .value
+                    }
+                    _ => unreachable!(),
+                };
+
+                writeln!(out, "{value:0width$b}", width = INSTRUCTION_WIDTH)?;
+            }
+            Rule::c_instruction => writeln!(out, "[TODO] C instruction")?,
+            Rule::label_definition => {}
             Rule::EOI => return Ok(()),
             _ => unreachable!(),
         }
@@ -70,13 +98,14 @@ pub fn scan_symbols(file: HackPair) -> anyhow::Result<SymbolTable> {
 
     for line in file.clone().into_inner() {
         match line.as_rule() {
-            Rule::a_instruction | Rule::c_instruction => line_number += 1,
+            Rule::a_instruction | Rule::c_instruction => {
+                if line_number >= ADDRESS_SPACE_SIZE {
+                    bail!("too many lines");
+                }
+                line_number += 1;
+            }
             Rule::label_definition => {
-                let symbol = line
-                    .into_inner()
-                    .exactly_one()
-                    .expect("multiple pairs in Rule::label_definition")
-                    .as_str();
+                let symbol = line.into_inner().exactly_one().unwrap().as_str();
                 match symbol_table.entry(symbol.to_owned()) {
                     Entry::Occupied(entry) => {
                         if entry.get().is_predefined {
@@ -98,29 +127,37 @@ pub fn scan_symbols(file: HackPair) -> anyhow::Result<SymbolTable> {
         }
     }
 
+    dbg!();
+
     // scan variables
     let mut stack_top = RESERVED_REGISTERS;
 
     for line in file.into_inner() {
         match line.as_rule() {
             Rule::a_instruction => {
+                dbg!(line.line_col());
+
                 let inner = line.into_inner().exactly_one().unwrap();
 
                 match inner.as_rule() {
                     Rule::constant => {}
                     Rule::symbol => {
                         let symbol = inner.as_str();
-
-                        if !symbol_table.contains_key(symbol) {
-                            symbol_table.insert(
-                                symbol.to_owned(),
-                                SymbolData {
-                                    value: stack_top,
-                                    is_predefined: false,
-                                },
-                            );
-                            stack_top += 1;
+                        if symbol_table.contains_key(symbol) {
+                            continue;
                         }
+                        if stack_top >= ADDRESS_SPACE_SIZE {
+                            bail!("too many variables");
+                        }
+
+                        symbol_table.insert(
+                            symbol.to_owned(),
+                            SymbolData {
+                                value: stack_top,
+                                is_predefined: false,
+                            },
+                        );
+                        stack_top += 1;
                     }
                     _ => unreachable!(),
                 }
