@@ -10,17 +10,35 @@ use {
     clap::Parser as _,
     itertools::Itertools,
     pest::Parser as _,
-    std::{fs, io},
+    std::{
+        fs::{self, File},
+        io::{self, Write},
+    },
 };
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    let file = fs::read_to_string(cli.file)?;
+    let source_path = &cli.file;
 
-    let ast = HackParser::parse(parser::Rule::file, &file)?
+    let source = fs::read_to_string(source_path)?;
+
+    let mut output_file;
+    let mut stdout_lock;
+    let out: &mut dyn Write = if let Some(path) = &cli.out {
+        output_file = File::create(path)?;
+        &mut output_file
+    } else if !cli.stdout && source_path.extension() == Some("asm".as_ref()) {
+        output_file = File::create(source_path.with_extension("hack"))?;
+        &mut output_file
+    } else {
+        stdout_lock = io::stdout().lock();
+        &mut stdout_lock
+    };
+
+    let ast = HackParser::parse(parser::Rule::file, &source)?
         .exactly_one()
         .expect("multiple pairs matching Rule::file");
-    assembler::assemble(ast, io::stdout().lock())?;
+    assembler::assemble(ast, out)?;
 
     Ok(())
 }

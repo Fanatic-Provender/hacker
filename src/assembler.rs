@@ -31,8 +31,6 @@ static KEYWORDS: &[(&str, usize)] = &[
 pub fn assemble<W: Write>(file: HackPair, mut out: W) -> anyhow::Result<()> {
     let symbol_table = scan_symbols(file.clone())?;
 
-    dbg!();
-
     for line in file.into_inner() {
         match line.as_rule() {
             Rule::a_instruction => {
@@ -198,16 +196,12 @@ pub fn scan_symbols(file: HackPair) -> anyhow::Result<SymbolTable> {
         }
     }
 
-    dbg!();
-
     // scan variables
     let mut stack_top = RESERVED_REGISTERS;
 
     for line in file.into_inner() {
         match line.as_rule() {
             Rule::a_instruction => {
-                dbg!(line.line_col());
-
                 let inner = line.into_inner().exactly_one().unwrap();
 
                 match inner.as_rule() {
