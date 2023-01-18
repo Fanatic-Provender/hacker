@@ -1,10 +1,12 @@
 file = { SOI ~ NEWLINE* ~ line ~ (NEWLINE+ ~ line)* ~ NEWLINE* ~ EOI }
 
-line = _{ a_instruction | c_instruction | line_other }
-line_other = @{ (!NEWLINE ~ ANY)+ }
+line = _{ a_instruction | c_instruction | label_definition }
 
-a_instruction = { "@" ~ constant }
+a_instruction = { "@" ~ (constant | symbol) }
 constant = @{ ASCII_DIGIT+ }
+symbol = @{ symbol_start ~ symbol_continue* }
+symbol_start = _{ ASCII_ALPHA | "_" | "." | "$" | ":" }
+symbol_continue = _{ symbol_start | ASCII_DIGIT }
 
 c_instruction = ${ (dest ~ "=")? ~ comp ~ (";" ~ jump)? }
 dest = @{ ("A" | "D" | "M")+ }
@@ -18,6 +20,8 @@ comp = @{
 register = @{ "A" | "D" | "M" }
 a_or_m = @{ "A" | "M" }
 jump = { "JGT" | "JEQ" | "JGE" | "JLT" | "JNE" | "JLE" | "JMP" }
+
+label_definition = { "(" ~ symbol ~ ")" }
 
 WHITESPACE = _{ " " | "\t" }
 COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* }
