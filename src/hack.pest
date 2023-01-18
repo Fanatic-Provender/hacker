@@ -1,5 +1,9 @@
 file = { SOI ~ (line ~ NEWLINE+)* ~ EOI }
 
-line = { (!NEWLINE ~ ANY)* }
+line = { a_instruction | line_other }
+line_other = { (!NEWLINE ~ ANY)* }
+
+a_instruction = { "@" ~ constant }
+constant = @{ ASCII_DIGIT+ }
 
 WHITESPACE = _{ " " | "\t" }
