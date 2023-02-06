@@ -1,6 +1,6 @@
 # `hacker`
 
-`hacker` is an assembler that converts Hack assembly code into binary machine code as defined in the [nand2tetris] project.  Please follow the instructions below to install `hacker`.  You may skip to the section "Using `hacker`" if you already have a copy of the `hacker` source repository.
+`hacker` is an assembler that converts Hack assembly code into binary machine code as defined in the [nand2tetris] project.  Please follow the instructions below to install `hacker`.
 
 ## Installing Git
 
@@ -29,6 +29,7 @@ Clone the source of `hacker` with Git:
 git clone https://github.com/Fanatic-Provender/hacker.git
 cd hacker
 ```
+You may skip this step if you already have a copy of the `hacker` source repository.
 
 ## Build `hacker`
 
