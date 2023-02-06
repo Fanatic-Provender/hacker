@@ -1,6 +1,6 @@
 # `hacker`
 
-`hacker` is an assembler that converts Hack assembly code into binary machine code as defined in the [nand2tetris] project.  Please follow the instructions below to install `hacker`.
+`hacker` is an assembler that converts Hack assembly code into binary machine code as defined in the [nand2tetris] project.  Please follow the instructions below to install `hacker`.  You may skip to the section "Using `hacker`" if you already have a copy of the `hacker` source repository.
 
 ## Installing Git
 
@@ -24,27 +24,38 @@ to update your Rust installation.
 
 ## Installing `hacker`
 
-1. Clone the source of `hacker` with Git:
-    ```
-    git clone https://github.com/Fanatic-Provender/hacker.git
-    cd hacker
-    ```
+Clone the source of `hacker` with Git:
+```
+git clone https://github.com/Fanatic-Provender/hacker.git
+cd hacker
+```
 
-2. Build `hacker` using Cargo:
-    ```
-    cargo build --release
-    ```
+## Build `hacker`
+
+Use Cargo to build `hacker`:
+```
+cargo build --release
+```
 
 ## Using `hacker`
 
 In the `hacker` directory, run the command
 ```
-cargo run -- <FILE>
+cargo run --release -- <FILE>
 ```
 to convert the assembly file `<FILE>` to machine code.
 `<FILE>` should have the extension `asm`,
 and `hacker` will generate an output file with the extension `hack`.
 The output file will rewrite any existing file with the same name.
+
+The optional flag `--stdout` instructs `hacker` to write the compiled machine code to standard output instead:
+```
+cargo run --release -- <FILE> --stdout
+```
+
+Alternatively, the `hacker` executable can be found
+in the directory `./target/release`
+after building `hacker` in release mode.
 
 
 [nand2tetris]: https://www.nand2tetris.org/
